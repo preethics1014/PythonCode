@@ -140,21 +140,21 @@ import pandas as pd
 import json
 
 def compare_excel_with_json(excel_file_path, json_file_path):
-    # Read the Excel file into a DataFrame
+ 
     excel_df = pd.read_excel(excel_file_path)
-    
-    # Load the JSON object
+
+
     with open(json_file_path, 'r') as json_file:
         json_data = json.load(json_file)
     
-    # Extract the column names and data types from the JSON object
+
     json_columns = json_data['columns']
     json_datatypes = json_data['datatypes']
     
-    # Initialize a list to store the mismatched columns and their expected data types
+
     mismatched_columns = []
 
-    # Compare the data types for each column in the Excel file with the JSON data
+  
     for col in excel_df.columns:
         if col in json_columns:
             excel_data_type = str(excel_df[col].dtype)
@@ -165,7 +165,7 @@ def compare_excel_with_json(excel_file_path, json_file_path):
 
     return mismatched_columns
 
-# Usage example
+
 excel_file_path = r'C:\Users\preethi.s\Downloads\tests.xlsx'
 json_file_path = r'C:\Users\preethi.s\Documents\RDBMS\schema.json'
 
