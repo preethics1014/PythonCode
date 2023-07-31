@@ -134,6 +134,50 @@ print(f"Values in sheet '{sheets}':")
 print(resultdf)
 
 
+///checking for datatypes in lookup as JSON file
+
+import pandas as pd
+import json
+
+def compare_excel_with_json(excel_file_path, json_file_path):
+    # Read the Excel file into a DataFrame
+    excel_df = pd.read_excel(excel_file_path)
+    
+    # Load the JSON object
+    with open(json_file_path, 'r') as json_file:
+        json_data = json.load(json_file)
+    
+    # Extract the column names and data types from the JSON object
+    json_columns = json_data['columns']
+    json_datatypes = json_data['datatypes']
+    
+    # Initialize a list to store the mismatched columns and their expected data types
+    mismatched_columns = []
+
+    # Compare the data types for each column in the Excel file with the JSON data
+    for col in excel_df.columns:
+        if col in json_columns:
+            excel_data_type = str(excel_df[col].dtype)
+            json_data_type = json_datatypes[col]
+            
+            if excel_data_type != json_data_type:
+                mismatched_columns.append((col, excel_data_type, json_data_type))
+
+    return mismatched_columns
+
+# Usage example
+excel_file_path = r'C:\Users\preethi.s\Downloads\tests.xlsx'
+json_file_path = r'C:\Users\preethi.s\Documents\RDBMS\schema.json'
+
+mismatched_columns = compare_excel_with_json(excel_file_path, json_file_path)
+if not mismatched_columns:
+    print("All column data types match the JSON object.")
+else:
+    print("Mismatched column data types:")
+    for col, excel_data_type, json_data_type in mismatched_columns:
+        print(f"Column '{col}' has data type '{excel_data_type}', expected '{json_data_type}'.")
+
+
         
  
 
