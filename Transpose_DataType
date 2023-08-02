@@ -16,12 +16,13 @@ def compare_excel_with_json(excel_df, json_file_path):
     json_datatypes = json_data['datatypes']
 
  
-
     # Initialize a list to store the mismatched columns and their expected data types
     mismatched_columns = []
     print("excel df columns",excel_df)
-    excel_df = excel_df.convert_dtypes()
-    print("excel df columns",excel_df.columns)
+   
+    excel_df = excel_df.convert_dtypes(convert_string='infer')
+     
+    print("excel df columns",excel_df)
 
  
 
@@ -44,6 +45,9 @@ def compare_excel_with_json(excel_df, json_file_path):
  
 
 def replace_special_characters(column_name):
+    # Convert integers to strings before applying the pattern
+    if isinstance(column_name, int):
+        column_name = str(column_name)
     # Define a regular expression pattern to match special characters
     pattern = r'[^\w\d]+'
     return re.sub(pattern, '', column_name)
@@ -192,21 +196,12 @@ def validate_excel_file(excel_file_path, json_file_path):
     print("all are validated")  
     print("All sheets have been validated and values printed successfully.")
 
- 
-
- 
-
- 
-
- 
 
  
 
 # Usage example
 excel_file_path = r'C:\Users\preethi.s\Downloads\tests.xlsx'
 json_file_path = r'C:\Users\preethi.s\Documents\RDBMS\schema.json'
-
- 
 
  
 
@@ -228,3 +223,6 @@ else:
 print("All Sheets are validated Succesfully")
 print(f"Values in sheet '{sheets}':")
 print(resultdf)
+
+json_data = resultdf.to_json(orient='records')
+print(json_data)
