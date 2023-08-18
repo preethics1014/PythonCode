@@ -5,11 +5,6 @@ def replace_special_characters(column_name):
     # Define a regular expression pattern to match special characters
     pattern = r'[^\w\d]+'
     return re.sub(pattern, '', column_name)
-
- 
-
- 
-
  
 
 def check_excel_columns(json_file_path, excel_file_path):
@@ -17,30 +12,15 @@ def check_excel_columns(json_file_path, excel_file_path):
         # Load JSON lookup
         with open(json_file_path, 'r', encoding='utf-8') as f:
             lookup_data = json.load(f)
-
- 
-
         # Load Excel file
         excel_data = pd.ExcelFile(excel_file_path)
-
- 
-
         sheet_name = excel_data.sheet_names[0]  # Get the first sheet name
         sheet = excel_data.parse(sheet_name, header=None, skiprows=1)
-
- 
-
         # Remove rows with null values
         sheet = sheet.dropna()
-
- 
-
         missing_cols = [col for col in lookup_data['columns'] if col not in sheet.iloc[0]
                                                   .apply(str.strip)  
                                                   .tolist()]
-
- 
-
         if not missing_cols:
             # Extract columns and values based on the lookup
             sheet_data = {'SheetName': sheet_name}
@@ -48,25 +28,11 @@ def check_excel_columns(json_file_path, excel_file_path):
                 col_index = sheet.iloc[0].tolist().index(col)
                 col_values = sheet.iloc[1:, col_index].tolist()
                 sheet_data[col] = col_values
-
- 
-
             result_df = pd.DataFrame([sheet_data])  # Create DataFrame with single row
             return result_df
-
- 
-
         return pd.DataFrame()  # Return an empty DataFrame
-
- 
-
     except Exception as e:
         return str(e)
-
- 
-
- 
-
 def convert_dtype(dtype_name):
     # Dictionary to map data type names
     type_mapping = {
@@ -76,113 +42,60 @@ def convert_dtype(dtype_name):
     }
     return type_mapping.get(dtype_name, dtype_name)  
 
- 
-
- 
-
- 
-
 def lookup_columns_in_current_sheet(excel_file_path, json_file_path):
     # Load JSON file
     excel_file = pd.ExcelFile(excel_file_path)
-
- 
-
     with open(json_file_path, 'r') as json_file:
         json_data = json.load(json_file)
         lookup_columns = json_data["columns"]
-
- 
-
- 
-
-    # Load Excel file
-
- 
-
     found_in_some_sheet = False
     excel_df=None
-
- 
-
     # Iterate through all sheets
     for sheet_name in excel_file.sheet_names:
         excel_data = pd.read_excel(excel_file_path, sheet_name=sheet_name)
         excel_columns = set(excel_data.columns)
-
- 
-
         # Check if JSON columns are missing in Excel sheet
         missing_columns = [col for col in lookup_columns if col not in excel_columns]
-
- 
-
         if len(missing_columns) == 0:
             found_in_some_sheet = True
             excel_df = excel_data
             print(f"All JSON columns are present in sheet '{sheet_name}'.")
             excel_df = excel_data
             break  # Exit the loop since we found a sheet with all columns
-
- 
-
     if not found_in_some_sheet:
-
- 
-
- 
-
         excel_df=validate_excel_file(excel_file_path,json_file_path)
         return excel_df
     return excel_df
-
- 
-
- 
-
 def compare_excel_with_json(excel_df, json_file_path):
     # Load the JSON schema
     with open(json_file_path, 'r') as json_file:
         json_data = json.load(json_file)
-
- 
-
- 
-
     # Extract column names and their expected data types from the JSON schema
     json_columns = json_data['columns']
     json_datatypes = json_data['datatypes']
-
+  
  
-
- 
-
-    # List to store mismatched columns
     mismatched_columns = []
-
- 
-
- 
-
-    # Convert Excel DataFrame columns to inferred data types
+   
+    
     excel_df = excel_df.convert_dtypes()
+
     excel_df = excel_df.infer_objects()
-
- 
-
- 
-
- 
-
-    # Compare column data types between Excel DataFrame and JSON schema
+   
     for col in excel_df.columns:
+        
+        
         if col in json_columns:
+           
             excel_data_type = str(excel_df[col].dtype)
             json_data_type = json_datatypes[col]
             excel_data_type = convert_dtype(excel_data_type)
             json_data_type = convert_dtype(json_data_type)
+            
+            
             if excel_data_type != json_data_type:
                 mismatched_columns.append((col, excel_data_type, json_data_type))
+    print("mismatch columns",mismatched_columns)                                            
     return mismatched_columns
 def validate_excel_file(excel_file_path, json_file_path):
     try:
@@ -219,39 +132,31 @@ def validate_excel_file(excel_file_path, json_file_path):
             df.dropna(how="all", inplace=True)
             df.columns = df.iloc[0]
             df = df.iloc[1:]
+            new_column_names = [replace_special_characters(col) for col in df.columns]
+            df.columns = new_column_names
+            
             matching_cols = [col for col in lookup_columns if col in df.columns]
             missing_columns = [col for col in lookup_columns if col not in df.columns]
             additional_columns = [col for col in df.columns if col not in lookup_columns]
-
- 
-
+            
             if set(lookup_columns).issubset(df.columns) or len(matching_cols) >= 2:
-              
                 if missing_columns:
-                  
-                    print("missing_cols")
+                    print(f"All columns are not matched, some columns are missing in '{sheet_name}':")
                     print(missing_columns)
                     
                 if additional_columns:
-                    print("add")
+                    print(f"All columns are not matched, additional columns are present in '{sheet_name}':")
                     print(additional_columns)
                     return df
-               
-                    
+                
                 print(f"All columns match in sheet '{sheet_name}'")
                 return df
-
-
  
-
+     
             else:
                 print("hits")
                 missing_columns = [col for col in lookup_columns if col not in df.columns]
                 additional_columns = [col for col in df.columns if col not in lookup_columns]
-
- 
-
- 
 
                 if missing_columns and df.shape[0] < df.shape[1]:
                     df_header_none = pd.read_excel(excel_file_path, sheet_name=sheet_name, header=None)
@@ -259,35 +164,42 @@ def validate_excel_file(excel_file_path, json_file_path):
                     transposed_df = df_header_none.transpose()
                     transposed_df.columns = transposed_df.iloc[0]
                     transposed_df.drop(0, inplace=True)
+                    
                     transposed_columns = set(transposed_df.columns)
-
-                    if set(transposed_columns) == set(lookup_columns):
+                    new_column_names = [replace_special_characters(col) for col in transposed_columns]
+                    transposed_df.columns = new_column_names
+                    print("transposed_df_collumns",transposed_df.columns)
+                    print("trangaid",transposed_columns)    
+                    if set(transposed_df.columns) == set(lookup_columns):
                         print(f"Columns are transposed in sheet '{sheet_name}'")
                         print("Both Lookup and transposed tables are matched.")
                         return transposed_df
                     else:
-                        missing_columns = [col for col in lookup_columns if col not in transposed_columns]
-                        additional_columns = [col for col in transposed_columns if col not in lookup_columns]
+                        missing_columns = [col for col in lookup_columns if col not in transposed_df.columns]
+                        additional_columns = [col for col in transposed_df.columns if col not in lookup_columns]
                         if missing_columns:
                             print(f"Columns are transposed in sheet '{sheet_name}', but still not matched.")
-                            print("Missing columns in sheet:",sheet_name)
+                            print("Missing columns in sheet:", sheet_name)
                             print(missing_columns)
                         if additional_columns:
-                            print("Additional_columns present in sheet:",sheet_name)
+                            print("Additional columns present in sheet:", sheet_name)
                             print(additional_columns)
-                            return transposed_df
-
- 
+                        return transposed_df
 
         except Exception as e:
             print(f"Error processing sheet '{sheet_name}': {e}")
             continue
 excel_file_path = r'C:\Users\preethi.s\Downloads\tests.xlsx'
-json_file_path =  r'C:\Users\preethi.s\Documents\RDBMS\schema.json'
-excel_df = lookup_columns_in_current_sheet(excel_file_path, json_file_path)
-print("Excel columns")
-print(excel_df)
-mismatched_columns = compare_excel_with_json(excel_df, json_file_path)
+json_file_path = r'C:\Users\preethi.s\Documents\RDBMS\schema.json'
+
+ 
+all_lookup_columns_df = lookup_columns_in_current_sheet(excel_file_path, json_file_path)
+
+
+print(all_lookup_columns_df)
+
+
+mismatched_columns = compare_excel_with_json(all_lookup_columns_df, json_file_path)
 if not mismatched_columns:
     print("All column data types match the JSON object.")
 else:
